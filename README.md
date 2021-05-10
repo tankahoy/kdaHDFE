@@ -2,24 +2,14 @@ FixedEffectModel: A Python Package for Linear Model with High Dimensional Fixed 
 =======================
 **FixedEffectModel** is a Python Package designed and built by **Kuaishou DA ecology group**. It provides solutions for linear model with high dimensional fixed effects,including support for calculation in variance (robust variance and multi-way cluster variance), fixed effects, and standard error of fixed effects. It also supports model with instrument variables (will upgrade in late Nov.2020).
 
-This version is forked version, designed to fix multiple run time errors that occurred when used. 
+This version was forked version of the original [FixedEffectModel][OGR], which was altered to simplify it, add 
+unitroot tests, fix runtime errors, and expand where relevant.
 
 # Installation
-
-This is a forked version, so you cannot install it from PyPi as of yet. Instead use:
+This version is not yet available via PyPi so instead you will need ot use:
 ```bash
 pip install git+https://github.com/sbaker-dev/FixedEffectModel
 ```
-
-# Main Functions
-
-|Function name| Description|Usage
-|-------------|------------|----|
-|ols_high_d_category|get main result|ols_high_d_category(data_df, consist_input=None, out_input=None, category_input=None, cluster_input=[],fake_x_input=[], iv_col_input=[], formula=None, robust=False, c_method='cgm', psdef=True, epsilon=1e-8, max_iter=1e6, process=5)|
-|ols_high_d_category_multi_results|get results of multiple models based on same dataset|ols_high_d_category_multi_results(data_df, models, table_header)|
-|getfe|get fixed effects|getfe(result, epsilon=1e-8)|
-|alpha_std|get standard error of fixed effects|alpha_std(result, formula, sample_num=100)|
-
 
 # Example
 
@@ -50,7 +40,6 @@ expression = 'id_1-id_2'
 alpha_std(result1, formula = expression , sample_num=100)
 
 ```
-
 
 # Requirements
 - Python 3.6+
@@ -88,3 +77,6 @@ This package welcomes feedback. If you have any additional questions or comments
 [4] Douglas L Miller, A Colin Cameron, and Jonah Gelbach. Robust inference with multi-way clustering. Technical report, Working Paper, 2009.
 
 [5] Jeffrey M Wooldridge. Econometric analysis of cross section and panel data. MIT press, 2010.
+
+
+[OGR]: https://github.com/ksecology/FixedEffectModel
