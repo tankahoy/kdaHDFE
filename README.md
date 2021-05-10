@@ -26,7 +26,7 @@ pip install git+https://github.com/sbaker-dev/FixedEffectModel
 Unlike the original FixedEffectModel you **must** to use a formula
 
 ```python
-import FixedEffectModel.api as FEM
+from FixedEffectModel import ols_high_d_category, getfe, alpha_std
 import pandas as pd
 
 df = pd.read_csv('yourdata.csv')
@@ -36,7 +36,7 @@ df = pd.read_csv('yourdata.csv')
 formula_without_iv = 'y~x+x2|id+firm|id+firm'
 formula_without_cluster = 'y~x+x2|id+firm|0|(Q|W~x3+x4+x5)'
 formula = 'y~x+x2|id+firm|id+firm|(Q|W~x3+x4+x5)'
-result1 = FEM.ols_high_d_category(df, formula = formula,robust=False,c_method = 'cgm',epsilon = 1e-8,psdef= True,max_iter = 1e6)
+result1 = ols_high_d_category(df, formula = formula,robust=False,c_method = 'cgm',epsilon = 1e-8,psdef= True,max_iter = 1e6)
 
 #show result
 result1.summary()

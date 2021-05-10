@@ -7,8 +7,6 @@ from FixedEffectModel.CalDf import cal_df
 from FixedEffectModel.CalFullModel import cal_fullmodel
 from FixedEffectModel.Forg import forg
 
-from statsmodels.iolib import SimpleTable
-from statsmodels.compat import lrange
 import statsmodels.api as sm
 from scipy.stats import t
 from scipy.stats import f
