@@ -1,5 +1,3 @@
-from statsmodels.compat import lrange
-from statsmodels.iolib import SimpleTable
 from FixedEffectModel.DemeanDataframe import demean_dataframe
 from FixedEffectModel.FormTransfer import form_transfer
 from FixedEffectModel.OLSFixed import OLSFixed
@@ -8,47 +6,65 @@ from FixedEffectModel.ClusterErr import *
 from FixedEffectModel.CalDf import cal_df
 from FixedEffectModel.CalFullModel import cal_fullmodel
 from FixedEffectModel.Forg import forg
+
+from statsmodels.iolib import SimpleTable
+from statsmodels.compat import lrange
 import statsmodels.api as sm
 from scipy.stats import t
 from scipy.stats import f
-import time
 import numpy as np
 import pandas as pd
+import time
 
 
-def ols_high_d_category(data_df, consist_input=None, out_input=None, category_input=None, cluster_input=[],
-                        formula=None, robust=False, c_method='cgm', psdef=True, epsilon=1e-8, max_iter=1e6, process=5):
+def ols_high_d_category(data_df, formula=None, robust=False, c_method='cgm', psdef=True, epsilon=1e-8, max_iter=1e6,
+                        debug=False):
     """
 
     :param data_df: Dataframe of relevant data
-    :param consist_input: List of continuous variables
-    :param out_input: List of dependent variables(so far, only support one dependent variable)
-    :param category_input: List of category variables(fixed effects)
-    :param cluster_input: List of cluster variables
-    :param formula: a string like 'y~x+x2|id+firm|id',dependent_variable~continuous_variable|fixed_effect|clusters
+    :type data_df: pd.DataFrame
+
+    :param formula: Formula takes the form of dependent_variable~continuous_variable|fixed_effect|clusters
+    :type formula: str
+
     :param robust: bool value of whether to get a robust variance
+    :type robust: bool
+
+    # Todo: if we have two methods then surely this is a switch bool not a string input?
     :param c_method: method used to calculate multi-way clusters variance. Possible choices are:
             - 'cgm'
             - 'cgm2'
+    :type c_method: str
+
     :param psdef:if True, replace negative eigenvalue of variance matrix with 0 (only in multi-way clusters variance)
+    :type psdef: bool
+
+    # todo: Or are these next two var's technically complex?
     :param epsilon: tolerance of the demean process
+    :type epsilon: float
+
     :param max_iter: max iteration of the demean process
-    :param process: number of process in multiprocessing(only in multi-way clusters variance calculating)
+    :type max_iter: float
+
+    :param debug: If true then print all individual stage prints, defaults to false.
+    :type debug: bool
+
     :return:params,df,bse,tvalues,pvalues,rsquared,rsquared_adj,fvalue,f_pvalue,variance_matrix,fittedvalues,resid,summary
+
+    Example
+    -------
+    y~x+x2|id+firm|id'
+
     """
 
-    if (consist_input is None) & (formula is None):
-        raise NameError('You have to input list of variables name or formula')
-    elif consist_input is None:
-        out_col, consist_col, category_col, cluster_col = form_transfer(formula)
+    out_col, consist_col, category_col, cluster_col = form_transfer(formula)
+    if debug:
         print('dependent variable(s):', out_col)
         print('continuous variables:', consist_col)
         print('category variables(fixed effects):', category_col)
         print('cluster variables:', cluster_col)
-    else:
-        out_col, consist_col, category_col, cluster_col = out_input, consist_input, category_input, cluster_input
-    consist_var = []
 
+    consist_var = []
     if category_col[0] == '0':
         demeaned_df = data_df.copy()
         const_consist = sm.add_constant(demeaned_df[consist_col])
