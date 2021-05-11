@@ -6,7 +6,7 @@ is estimable.
 import numpy as np
 import pandas as pd
 
-from kdaHDFE.Operation import do_operation
+from kdaHDFE.legacy.Operation import do_operation
 
 
 def is_estimable(data_df, b_x, category_col, formula, index_name):

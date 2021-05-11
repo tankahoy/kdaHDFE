@@ -1,11 +1,10 @@
-from kdaHDFE.DemeanDataframe import demean_dataframe
+from kdaHDFE.legacy.DemeanDataframe import demean_dataframe
 from kdaHDFE.formula_transform import formula_transform
-from kdaHDFE.OLSFixed import OLSFixed
-from kdaHDFE.RobustErr import robust_err
-from kdaHDFE.ClusterErr import *
-from kdaHDFE.CalDf import cal_df
-from kdaHDFE.CalFullModel import cal_fullmodel
-from kdaHDFE.Forg import forg
+from kdaHDFE.legacy.OLSFixed import OLSFixed
+from kdaHDFE.robust_error import robust_err
+from kdaHDFE.clustering import *
+from kdaHDFE.calculate_df import cal_df
+from kdaHDFE.legacy.CalFullModel import cal_fullmodel
 
 import statsmodels.api as sm
 from scipy.stats import t
@@ -52,23 +51,16 @@ def ols_high_d_category(data_df, formula=None, robust=False, c_method='cgm', psd
     y~x+x2|id+firm|id'
 
     """
+    total_start = time.time()
 
     out_col, consist_col, category_col, cluster_col = formula_transform(formula)
 
-    if debug:
-        print('dependent variable(s):', out_col)
-        print('continuous variables:', consist_col)
-        print('category variables(fixed effects):', category_col)
-        print('cluster variables:', cluster_col)
-
     consist_var = []
-    if category_col[0] == '0':
+    if len(category_col) == 0 or len(consist_col) == 0:
         demeaned_df = data_df.copy()
         const_consist = sm.add_constant(demeaned_df[consist_col])
-        print(consist_col)
         consist_col = ['const'] + consist_col
         demeaned_df['const'] = const_consist['const']
-        print('Since the model does not have fixed effect, add an intercept.')
         rank = 0
     else:
         for i in consist_col:
@@ -77,17 +69,13 @@ def ols_high_d_category(data_df, formula=None, robust=False, c_method='cgm', psd
         start = time.time()
         demeaned_df = demean_dataframe(data_df, consist_var, category_col, epsilon, max_iter)
         end = time.time()
-        print('demean time:',forg((end - start),4),'s')
         start = time.process_time()
         rank = cal_df(data_df, category_col)
         end = time.process_time()
-        print('time used to calculate degree of freedom of category variables:',forg((end - start),4),'s')
-        print('degree of freedom of category variables:', rank)
 
     model = sm.OLS(demeaned_df[out_col], demeaned_df[consist_col])
     result = model.fit()
     demeaned_df['resid'] = result.resid
-
     n = demeaned_df.shape[0]
     k = len(consist_col)
     f_result = OLSFixed()
@@ -99,33 +87,21 @@ def ols_high_d_category(data_df, formula=None, robust=False, c_method='cgm', psd
     f_result.params = result.params
     f_result.df = result.df_resid - rank
 
+    # Now we need to update the standard errors of the OLS based on robust and clustering
     if (len(cluster_col) == 0) & (robust is False):
         std_error = result.bse * np.sqrt((n - k) / (n - k - rank))
         covariance_matrix = result.normalized_cov_params * result.scale * result.df_resid / f_result.df
     elif (len(cluster_col) == 0) & (robust is True):
-        start = time.process_time()
         covariance_matrix = robust_err(demeaned_df, consist_col, n, k, rank)
-        end = time.process_time()
-        print('time used to calculate robust covariance matrix:',forg((end - start),4),'s')
         std_error = np.sqrt(np.diag(covariance_matrix))
     else:
         if category_col[0] == '0':
             nested = False
         else:
-            start = time.process_time()
             nested = is_nested(demeaned_df, category_col, cluster_col, consist_col)
-            end = time.process_time()
-            print('category variable(s) is_nested in cluster variables:', nested)
-            print('time used to define nested or not:', end - start)
 
-        # if nested or c_method != 'cgm':
-        #     f_result.df = min(min_clust(data_df, cluster_col) - 1, f_result.df)
-
-        start = time.process_time()
         covariance_matrix = clustered_error(demeaned_df, consist_col, cluster_col, n, k, rank, nested=nested,
                                             c_method=c_method, psdef=psdef)
-        end = time.process_time()
-        print('time used to calculate clustered covariance matrix:',forg((end - start),4),'s')
         std_error = np.sqrt(np.diag(covariance_matrix))
 
     f_result.bse = std_error
@@ -133,14 +109,12 @@ def ols_high_d_category(data_df, formula=None, robust=False, c_method='cgm', psd
     f_result.variance_matrix = covariance_matrix
     f_result.tvalues = f_result.params / f_result.bse
     f_result.pvalues = pd.Series(2 * t.sf(np.abs(f_result.tvalues), f_result.df), index=list(result.params.index))
+
     f_result.rsquared = result.rsquared
     f_result.rsquared_adj = 1 - (len(data_df) - 1) / (result.df_resid - rank) * (1 - result.rsquared)
-    start = time.process_time()
     tmp1 = np.linalg.solve(f_result.variance_matrix, np.mat(f_result.params).T)
     tmp2 = np.dot(np.mat(f_result.params), tmp1)
     f_result.fvalue = tmp2[0, 0] / result.df_model
-    end = time.process_time()
-    print('time used to calculate fvalue:',forg((end - start),4),'s')
     if len(cluster_col) > 0 and c_method == 'cgm':
         f_result.f_pvalue = f.sf(f_result.fvalue, result.df_model,
                                  min(min_clust(data_df, cluster_col) - 1, f_result.df))
@@ -167,4 +141,7 @@ def ols_high_d_category(data_df, formula=None, robust=False, c_method='cgm', psd
     else:
         f_result.cluster_method = c_method
         f_result.Covariance_Type = 'clustered'
+
+    end = time.time()
+    print(f"Total {end - total_start}")
     return f_result  # , demeaned_df

@@ -1,10 +1,10 @@
-from kdaHDFE.Forg import forg
+from kdaHDFE.legacy.Forg import forg
 import time
 import pandas as pd
 from statsmodels.iolib.tableformatting import (gen_fmt, fmt_2)
 from statsmodels.iolib.table import SimpleTable
 from itertools import zip_longest
-from statsmodels.compat.python import lrange, lmap, lzip
+from statsmodels.compat.python import lrange, lzip
 from scipy.stats import t
 
 

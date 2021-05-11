@@ -8,10 +8,10 @@ Thus we recommend using alpha_std.
 import numpy as np
 import statsmodels.api as sm
 from multiprocessing import Pool
-from kdaHDFE.Bootstrap import bootstrap
-from kdaHDFE.DemeanDataframe import demean_dataframe
-from kdaHDFE.EstimableCheck import is_estimable, projection2df
-from kdaHDFE.Operation import do_operation
+from kdaHDFE.legacy.Bootstrap import bootstrap
+from kdaHDFE.legacy.DemeanDataframe import demean_dataframe
+from kdaHDFE.legacy.EstimableCheck import is_estimable, projection2df
+from kdaHDFE.legacy.Operation import do_operation
 
 
 def alpha_std0(result, formula, sample_num=100):
