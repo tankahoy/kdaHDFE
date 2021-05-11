@@ -1,26 +1,29 @@
-def form_transfer(form):
+def form_transfer(formula):
     """
 
-    :param form: formula in string type. e.g. 'y~x1+x2|id+firm|id',dependent_variable~continuous_variable|fixed_effect|clusters
+    :param formula: dependent variable ~ covariant | fixed_effect |clusters'
+    :type formula: str
+
     :return: Lists of out_col, consist_col, category_col, cluster_col, respectively.
     """
-    form = form.replace(' ', '')
-    form = form.split('~')
-    pos = 0
-    out_col, consist_col, category_col, cluster_col = [], [], [], []
-    for part in form:
-        part = part.split('|')
-        for p2 in part:
-            pos += 1
-            p2 = p2.split('+')
-            if pos == 1:
-                out_col = p2
-            elif pos == 2:
-                consist_col = p2
-            elif pos == 3:
-                category_col = p2
-            elif pos == 4:
-                cluster_col = p2
-            else:
-                raise NameError('Invalid formula, please refer to the right one')
-    return out_col, consist_col, category_col, cluster_col
+    phenotype = formula.replace(' ', '').split("~")
+    assert len(phenotype) == 2, f"Formula must have a phenotype separated by ~ yet failed to find via splitting " \
+                                f"for {formula}"
+
+    # Split the right hand side out, validate there is only one phenotype
+    phenotype, rhs = phenotype
+    assert len(phenotype.split("+")) == 1, f"Can only provide a single phenotype per OLS yet found " \
+                                           f"{phenotype.split('+')}"
+
+    segments = rhs.split("|")
+    assert 1 <= len(segments) < 4 and sum([len(seg) for seg in segments]) != 0, \
+        f"Right hand side should be 'covariant | fixed_effect | cluster's meaning.\nAll models should have at least " \
+        f"a covariant, and can be max length of 3 yet found: {segments}"
+
+    # Ensure segments are of length 3
+    segments = segments + ["" for _ in range(3 - len(segments))]
+
+    # Split each section on + then return the phenotype, covariant, fixed_effect and cluster variables
+    sections = [[phenotype]] + [section.split("+") if len(section) > 0 else [] for section in segments]
+    phenotype, covariant, fixed_effects, clusters = sections
+    return phenotype, covariant, fixed_effects, clusters
