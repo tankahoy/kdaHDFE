@@ -22,7 +22,7 @@ def cal_df(data_df, category_col):
         edge_list = data_df[category_col].values.tolist()
         for ll in edge_list:
             g.add_edge('fix1_' + str(ll[0]), 'fix2_' + str(ll[1]))
-        df = e - (len(list(nx.connected_components(g))) + len(category_col) - 2)
+
+        return e - (len(list(nx.connected_components(g))) + len(category_col) - 2)
     else:
-        df = e
-    return df
+        return e
