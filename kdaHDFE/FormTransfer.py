@@ -5,6 +5,7 @@ def form_transfer(formula):
     :type formula: str
 
     :return: Lists of out_col, consist_col, category_col, cluster_col, respectively.
+    :rtype: (list[str], list[str], list[str], list[str])
     """
     phenotype = formula.replace(' ', '').split("~")
     assert len(phenotype) == 2, f"Formula must have a phenotype separated by ~ yet failed to find via splitting " \

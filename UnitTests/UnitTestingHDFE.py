@@ -13,12 +13,14 @@ class UnitTestingHDFE(unittest.TestCase):
         ---------------------------
         Cov: No phenotype
         BMI+Drinking~Cov: More than 1 phenotype
+        rs012~: Phenotype with no right hand side
+        rs012~Cov+Cov2|DFE|CL|Random: More than three sections of formula
 
         :return:
         """
 
         # Failed formula's to test that AssertionError can catch them
-        formula_list = ["CoV", "BMI+Drinking~CoV"]
+        formula_list = ["CoV", "BMI+Drinking~CoV", "rs012~", "rs012~Cov+Cov2|DFE|CL|Random"]
 
         for formula in formula_list:
             with self.subTest():
