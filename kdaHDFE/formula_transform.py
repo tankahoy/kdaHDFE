@@ -1,4 +1,4 @@
-def form_transfer(formula):
+def formula_transform(formula):
     """
 
     :param formula: dependent variable ~ covariant | fixed_effect |clusters'

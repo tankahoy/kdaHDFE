@@ -1,5 +1,5 @@
 from kdaHDFE.DemeanDataframe import demean_dataframe
-from kdaHDFE.FormTransfer import form_transfer
+from kdaHDFE.formula_transform import formula_transform
 from kdaHDFE.OLSFixed import OLSFixed
 from kdaHDFE.RobustErr import robust_err
 from kdaHDFE.ClusterErr import *
@@ -28,7 +28,6 @@ def ols_high_d_category(data_df, formula=None, robust=False, c_method='cgm', psd
     :param robust: bool value of whether to get a robust variance
     :type robust: bool
 
-    # Todo: if we have two methods then surely this is a switch bool not a string input?
     :param c_method: method used to calculate multi-way clusters variance. Possible choices are:
             - 'cgm'
             - 'cgm2'
@@ -37,7 +36,6 @@ def ols_high_d_category(data_df, formula=None, robust=False, c_method='cgm', psd
     :param psdef:if True, replace negative eigenvalue of variance matrix with 0 (only in multi-way clusters variance)
     :type psdef: bool
 
-    # todo: Or are these next two var's technically complex?
     :param epsilon: tolerance of the demean process
     :type epsilon: float
 
@@ -55,7 +53,8 @@ def ols_high_d_category(data_df, formula=None, robust=False, c_method='cgm', psd
 
     """
 
-    out_col, consist_col, category_col, cluster_col = form_transfer(formula)
+    out_col, consist_col, category_col, cluster_col = formula_transform(formula)
+
     if debug:
         print('dependent variable(s):', out_col)
         print('continuous variables:', consist_col)

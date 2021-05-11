@@ -1,4 +1,4 @@
-from kdaHDFE import form_transfer
+from kdaHDFE import formula_transform
 
 import unittest
 
@@ -24,7 +24,7 @@ class UnitTestingHDFE(unittest.TestCase):
 
         for formula in formula_list:
             with self.subTest():
-                self.assertRaises(AssertionError, lambda: form_transfer(formula)[:1])
+                self.assertRaises(AssertionError, lambda: formula_transform(formula)[:1])
 
 
 
