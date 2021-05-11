@@ -1,11 +1,13 @@
-from kdaHDFE import formula_transform, cal_df
+from kdaHDFE import formula_transform, cal_df, clustered_error, is_nested, robust_err, Result
+
 import statsmodels.api as sm
 import pandas as pd
 import numpy as np
 
 
 class HDFE:
-    def __init__(self, data_frame, formula, epsilon=1e-8, max_iter=1e6, mean_squared_error=10):
+    def __init__(self, data_frame, formula, robust=False, cm="cgm", ps_def=True, epsilon=1e-8, max_iter=1e6,
+                 mean_squared_error=10):
 
         # Extract variable names from formula
         self.phenotype, self.covariants, self.fixed_effects, self.clusters = formula_transform(formula)
@@ -18,6 +20,10 @@ class HDFE:
         self.mean_squared_error = mean_squared_error
         self.epsilon = epsilon
         self.max_iter = max_iter
+        self.robust = robust
+        # todo: IF clusters > 1 then cgm2 is preferred
+        self.cm = cm
+        self.ps_def = ps_def
 
     def demean_data_frame(self):
         """
@@ -49,13 +55,25 @@ class HDFE:
         return demean_return
 
     def reg_hdfe(self):
+        """
+        Run a demeaned version of the data frame via absorption of FE's and adjust results relative to the demeaned data
+
+        :return: Results
+        :rtype: Result
+        """
 
         # Demean the data and determine the rank from the absorbed fixed effects from demeaning
         demeaned, rank = self._reg_demean()
 
-        # Calculate the base unadjusted OLS results, add residuals to result for clustering
+        # Calculate the base unadjusted OLS results, add residuals to result for clustering and update degrees of
+        # freedom from demeaning
         result = sm.OLS(demeaned[self.phenotype], demeaned[self.covariants]).fit()
-        demeaned['resid'] = result.resid
+        demeaned['resid'] = result.resid  # Ever used?
+        result.df_resid = result.df_resid - rank
+
+        std_error, covariant_matrix = self._reg_std(result, rank, demeaned)
+
+        return Result(result, std_error, covariant_matrix)
 
     def _reg_demean(self):
         """
@@ -77,3 +95,35 @@ class HDFE:
 
         else:
             return self.demean_data_frame(), cal_df(self.df, self.fixed_effects)
+
+    def _reg_std(self, result, rank, demeaned_df):
+        """
+        If we have clusters, we need to cluster the standard error depending on the clustering method of self.cm
+
+        Otherwise, we need to create robust or non robust standard errors from the standard errors calculated adjusted
+        for de-meaning
+
+        :param result: OLS result
+        :param rank: rank of degrees of freedom
+        :param demeaned_df: Demeaned Database for clustering if required
+        :return: The standard error and the covariance matrix
+        """
+        # Now we need to update the standard errors of the OLS based on robust and clustering
+        if (len(self.clusters) == 0) & (self.robust is False):
+            std_error = result.bse * np.sqrt((result.nobs - len(self.covariants)) / (result.nobs - len(self.covariants)
+                                                                                     - rank))
+            covariance_matrix = result.normalized_cov_params * result.scale * result.df_resid / result.df_resid
+
+        elif (len(self.clusters) == 0) & (self.robust is True):
+            covariance_matrix = robust_err(demeaned_df, self.covariants, result.nobs, len(self.covariants), rank)
+            std_error = np.sqrt(np.diag(covariance_matrix))
+
+        else:
+            nested = is_nested(demeaned_df, self.fixed_effects, self.clusters, self.covariants)
+
+            covariance_matrix = clustered_error(demeaned_df, self.covariants, self.clusters, result.nobs,
+                                                len(self.covariants), rank, nested=nested, c_method=self.cm,
+                                                psdef=self.ps_def)
+            std_error = np.sqrt(np.diag(covariance_matrix))
+
+        return std_error, covariance_matrix
