@@ -16,7 +16,7 @@ pip install git+https://github.com/sbaker-dev/FixedEffectModel
 Unlike the original FixedEffectModel you **must** to use a formula
 
 ```python
-from FixedEffectModel import ols_high_d_category, getfe, alpha_std
+from kdaHDFE import ols_high_d_category, getfe, alpha_std
 import pandas as pd
 
 df = pd.read_csv('yourdata.csv')

@@ -1,7 +1,7 @@
 import numpy as np
 import networkx as nx
 import pandas as pd
-from FixedEffectModel.Projection import projection
+from kdaHDFE.Projection import projection
 
 
 def getfe(result, epsilon=1e-8):

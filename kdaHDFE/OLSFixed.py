@@ -1,4 +1,4 @@
-from FixedEffectModel.Forg import forg
+from kdaHDFE.Forg import forg
 import time
 import pandas as pd
 from statsmodels.iolib.tableformatting import (gen_fmt, fmt_2)

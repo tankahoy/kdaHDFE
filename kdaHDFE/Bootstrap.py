@@ -1,9 +1,9 @@
 import os
 import numpy as np
 import statsmodels.api as sm
-from FixedEffectModel.DemeanDataframe import demean_dataframe
-from FixedEffectModel.EstimableCheck import projection2df
-from FixedEffectModel.Operation import do_operation
+from kdaHDFE.DemeanDataframe import demean_dataframe
+from kdaHDFE.EstimableCheck import projection2df
+from kdaHDFE.Operation import do_operation
 
 
 def bootstrap(new, demeaned_resid, y_pred, n, category_col, demean_df, consist_col, formula, index_name, i):
