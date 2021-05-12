@@ -9,12 +9,14 @@ class HDFE:
     def __init__(self, data_frame, formula, robust=False, cm="cgm", ps_def=True, epsilon=1e-8, max_iter=1e6,
                  mean_squared_error=10):
 
-        # Extract variable names from formula
-        self.phenotype, self.covariants, self.fixed_effects, self.clusters = formula_transform(formula)
-
         # Setup the database reference
         self.df = data_frame
         self.obs = len(self.df)
+
+        # Extract variable names from formula, check they all exist in dataframe
+        self.phenotype, self.covariants, self.fixed_effects, self.clusters = formula_transform(formula)
+        for variable in self.phenotype + self.covariants + self.fixed_effects + self.clusters:
+            assert variable in self.df.columns, f"{variable} is not in DataFrame!"
 
         # Some standard variables to be used for demeaning / clustering
         self.mean_squared_error = mean_squared_error
