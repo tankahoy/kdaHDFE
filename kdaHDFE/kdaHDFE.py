@@ -55,19 +55,27 @@ class HDFE:
             demean_return[[covariant]] = demeaned[[covariant]]
         return demean_return[variables + self.fixed_effects]
 
-    def reg_hdfe(self):
+    def reg_hdfe(self, demean_option=0):
         """
         Run a demeaned version of the data frame via absorption of FE's and adjust results relative to the demeaned data
 
-        :return: Results
+        :param demean_option: The demeaning operation to perform.
+            If 0, demeans phenotype + covariants. Useful for single regressions that will handle all the data complexity
+            for you.
+            If 1, demeans phenotype, assumes that you have already demeaned covariant's
+        :type demean_option: int
+
+        :return: Results of the regresstion
         :rtype: Result
         """
 
-        # Demean the data and determine the rank from the absorbed fixed effects from demeaning
-        demeaned, rank = self._reg_demean()
+        demeaned, rank = self._reg_demean(demean_option)
+        print(rank)
 
         # Calculate the base unadjusted OLS results, add residuals to result for clustering and update degrees of
         # freedom from demeaning
+        # todo Allow for missing
+        # todo write unit test of missing data to test that data with missing still runs
         result = sm.OLS(demeaned[self.phenotype], demeaned[self.covariants]).fit()
         demeaned['resid'] = result.resid  # Ever used?
         result.df_resid = result.df_resid - rank
@@ -76,11 +84,17 @@ class HDFE:
 
         return Result(result, std_error, covariant_matrix)
 
-    def _reg_demean(self):
+    def _reg_demean(self, demean_option):
         """
         Certain model specifications may require use to add an intercept such as when there is no need to demean as
-        there are no fixed effects. If we have fixed effects, demean the data and calculate degrees of freedome lost
+        there are no fixed effects. If we have fixed effects, demean the data and calculate degrees of freedom lost
         via construction of demeaned data.
+
+        :param demean_option: The demeaning operation to perform.
+            If 0, demeans phenotype + covariants. Useful for single regressions that will handle all the data complexity
+            for you.
+            If 1, demeans phenotype, assumes that you have already demeaned covariant's
+        :type demean_option: int
 
         :return: Demeaned DataFrame, rank of degrees of freedom
         :rtype: (pd.DataFrame, int)
@@ -89,13 +103,33 @@ class HDFE:
         if len(self.covariants) == 0 or len(self.fixed_effects) == 0 or \
                 (len(self.covariants) == 0 and len(self.fixed_effects) == 0 and len(self.clusters) > 0):
 
+            # Demean == DataFrame
             demeaned = self.df.copy()
             demeaned["Const"] = [1.0 for _ in range(len(demeaned))]
             self.covariants = self.covariants + ["Const"]
             return demeaned, 0
 
         else:
-            return self.demean_data_frame(), cal_df(self.df, self.fixed_effects)
+            if demean_option == 0:
+                # Demean the whole dataframe and calculate the degrees of freedom after demeaning
+                # todo also here
+                return self.demean(self.phenotype + self.covariants), cal_df(self.df, self.fixed_effects)
+
+            elif demean_option == 1:
+                # Demean the phenotype
+                phenotype = self.demean(self.phenotype)
+                demeaned = self.df.copy()
+                demeaned[self.phenotype] = phenotype[self.phenotype]
+
+                # Return this after calculating degrees of freedom
+                # todo: Cal_df should always be the same though right? Why are we doing this per run when it can be
+                #  per model?
+                # todo: Have a -recalculate_df- property or something to update the df if the formula is changed.
+                return demeaned, cal_df(self.df, self.fixed_effects)
+
+            else:
+                raise IndexError(f"Demean_option takes the value of 0 for demeaning all variables in formula or 1 for"
+                                 f"demeaning phenotype")
 
     def _reg_std(self, result, rank, demeaned_df):
         """
