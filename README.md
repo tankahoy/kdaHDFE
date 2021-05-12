@@ -1,20 +1,24 @@
 FixedEffectModel: A Python Package for Linear Model with High Dimensional Fixed Effects.
 =======================
-**FixedEffectModel** is a Python Package designed and built by **Kuaishou DA ecology group**. It provides solutions for linear model with high dimensional fixed effects,including support for calculation in variance (robust variance and multi-way cluster variance), fixed effects, and standard error of fixed effects. It also supports model with instrument variables (will upgrade in late Nov.2020).
+**FixedEffectModel** is a Python Package designed and built by **Kuaishou DA ecology group**. It provides solutions for linear model with high dimensional fixed effects,including support for calculation in variance (robust variance and multi-way cluster variance), fixed effects, and standard error of fixed effects. It also supports model with instrument variables.
 
 This version was forked version of the original [FixedEffectModel][OGR], which was altered to simplify it, add 
-unitroot tests, fix runtime errors, and expand where relevant.
+unit tests, fix runtime errors, and expand where relevant. This extension is more designed around running hundreds of thousands if not millions of most the same regression bar a single variable for genetic analysis.
 
 # Installation
-This version is not yet available via PyPi so instead you will need ot use:
+Install from pyPi via
+
 ```bash
-pip install git+https://github.com/sbaker-dev/FixedEffectModel
+pip install kdaHDFE
 ```
 
 # Example
 
-Unlike the original FixedEffectModel you **must** to use a formula  akin to 
+Unlike the original FixedEffectModel you **must** to use a formula akin to: 
+
 'dependent variable ~ continuous variable|fixed_effect|clusters
+
+If you want to cluster without FE you can just leave it blank as in BMI~Calories||PlaceOfBirth
 
 ```python
 from kdaHDFE import HDFE
@@ -22,10 +26,9 @@ import pandas as pd
 
 df = pd.read_csv('yourdata.csv')
 
-#define model
-formula_without_iv = 'y~x+x2|id+firm|id+firm'
-formula_without_cluster = 'y~x+x2|id+firm|0|(Q|W~x3+x4+x5)'
-formula = 'y~x+x2|id+firm|id+firm|(Q|W~x3+x4+x5)'
+# define model
+formula = 'y~x+x2|id+firm|id+firm'
+
 result1 = HDFE(df, formula = formula, robust=False, epsilon = 1e-8, ps_def= True,max_iter = 1e6)
 
 ```
@@ -38,22 +41,12 @@ result1 = HDFE(df, formula = formula, robust=False, epsilon = 1e-8, ps_def= True
 - networkx
 
 # Citation
-If you use FixedEffectModel in your research, please cite us as follows:
+If you use FixedEffectModel in your research, please consider citing the original author at:
 
-Kuaishou DA Ecology. **FixedEffectModel: A Python Package for Linear Model with High Dimensional Fixed Effects.**<https://github.com/ksecology/FixedEffectModel>,2020.Version 0.x
+Kuaishou DA Ecology. **FixedEffectModel: A Python Package for Linear Model with High Dimensional Fixed Effects.**<https://github.com/ksecology/FixedEffectModel>,2020.Version X
 
-BibTex:
-```
-@misc{FixedEffectModel,
-  author={Kuaishou DA Ecology},
-  title={{FixedEffectModel: {A Python Package for Linear Model with High Dimensional Fixed Effects}},
-  howpublished={https://github.com/ksecology/FixedEffectModel},
-  note={Version 0.x},
-  year={2020}
-}
-```
-# Feedback
-This package welcomes feedback. If you have any additional questions or comments, please contact <da_ecology@kuaishou.com>.
+As well as this update if you did us this kdaHDFE extension at:
+Baker, S. E. **kdaHDFE: A Python Package for Linear Model with High Dimensional Fixed Effects.**<https://github.com/sbaker-dev/kdaHDFE>,2021.Version X.
 
 
 # Reference
