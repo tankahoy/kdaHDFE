@@ -25,6 +25,31 @@ class Result:
         self.p_values = pd.Series(2 * t.sf(np.abs(self.t_values), self.df), index=list(self.params.index))
         self.resid = self.raw_results.resid
 
+    def conf_interval(self, conf=0.05):
+        """Calculate the 95% confidence interval"""
+        conf_min = self.params - t.ppf(1 - conf / 2, self.df) * self.bse
+        conf_max = self.params + t.ppf(1 - conf / 2, self.df) * self.bse
+        return conf_min, conf_max
+
     def results_out(self, variable_list):
-        # todo: We want this to act akin to the regression results part in SRGWAS
-        raise NotImplementedError
+        """
+        Returns for each variable in the list of variables
+
+        [Parameters, standard error, p values, obs, 95%min CI, 95%max CI]
+
+        :param variable_list: A list of variables, or a string if you only want a single variable
+        :type variable_list: list | str
+
+        :return: A list of lists, where each list are the results in float
+        :rtype:list[list[float, float, float, float, float, float]]
+        """
+        results = []
+
+        # If only one variable is called recast variable_list as a list
+        if isinstance(variable_list, str):
+            variable_list = [variable_list]
+
+        for v in variable_list:
+            results.append([self.params[v], self.bse[v], self.p_values[v], self.obs] +
+                           [c[v] for c in self.conf_interval()])
+        return results
