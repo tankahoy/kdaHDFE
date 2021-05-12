@@ -46,9 +46,7 @@ class HDFE:
 
         # Calculate the base unadjusted OLS results, add residuals to result for clustering and update degrees of
         # freedom from demeaning
-        # todo Allow for missing
-        # todo write unit test of missing data to test that data with missing still runs
-        result = sm.OLS(demeaned[self.phenotype], demeaned[self.covariants]).fit()
+        result = sm.OLS(demeaned[self.phenotype], demeaned[self.covariants], missing='drop').fit()
         demeaned['resid'] = result.resid  # Ever used?
         result.df_resid = result.df_resid - rank
 
