@@ -1,4 +1,4 @@
-from kdaHDFE import formula_transform, cal_df, clustered_error, is_nested, robust_err, Result
+from kdaHDFE import formula_transform, clustered_error, is_nested, robust_err, Result, demean
 
 import statsmodels.api as sm
 import pandas as pd
@@ -25,52 +25,24 @@ class HDFE:
         self.cm = cm
         self.ps_def = ps_def
 
-    def demean(self, variables):
-        """
-        Using large numbers of fixed effects can slow programs down. This uses demeaning of groupby to reduce the
-        complexity of the operation
-
-        :return: Demeaned data frame
-        :rtype: pd.DataFrame
-        """
-        demean_return = self.df.copy()
-        for covariant in variables:
-            demeaned = self.df.copy()
-            mse = self.mean_squared_error
-
-            iter_count = 0
-            demeans_cache = np.zeros(self.obs, np.float64)
-
-            while mse > self.epsilon:
-                for fe in self.fixed_effects:
-                    demeaned[covariant] = demeaned[covariant] - demeaned.groupby(fe)[covariant].transform('mean')
-
-                iter_count += 1
-                mse = np.linalg.norm(demeaned[covariant].values - demeans_cache)
-                demeans_cache = demeaned[covariant].copy().values
-
-                if iter_count > self.max_iter:
-                    raise RuntimeWarning(f'MSE fails to converge to epsilon within {self.max_iter} iterations')
-
-            demean_return[[covariant]] = demeaned[[covariant]]
-        return demean_return[variables + self.fixed_effects]
-
-    def reg_hdfe(self, demean_option=0):
+    def reg_hdfe(self, rank, demean_data=True):
         """
         Run a demeaned version of the data frame via absorption of FE's and adjust results relative to the demeaned data
 
-        :param demean_option: The demeaning operation to perform.
-            If 0, demeans phenotype + covariants. Useful for single regressions that will handle all the data complexity
-            for you.
-            If 1, demeans phenotype, assumes that you have already demeaned covariant's
-        :type demean_option: int
+        :param rank: Degrees of freedom after demeaning
+        :type rank: int
 
-        :return: Results of the regresstion
+        :param demean_data: Will Demean based on the variables selected in the formula, defaults to True. If false,
+            assumes data is demeaned and necessary intercepts exist if required.
+        :type demean_data: bool
+
+        :return: Results of the regression
         :rtype: Result
         """
-
-        demeaned, rank = self._reg_demean(demean_option)
-        print(rank)
+        if demean_data:
+            demeaned = self._reg_demean()
+        else:
+            demeaned = self.df
 
         # Calculate the base unadjusted OLS results, add residuals to result for clustering and update degrees of
         # freedom from demeaning
@@ -84,20 +56,13 @@ class HDFE:
 
         return Result(result, std_error, covariant_matrix)
 
-    def _reg_demean(self, demean_option):
+    def _reg_demean(self):
         """
         Certain model specifications may require use to add an intercept such as when there is no need to demean as
-        there are no fixed effects. If we have fixed effects, demean the data and calculate degrees of freedom lost
-        via construction of demeaned data.
-
-        :param demean_option: The demeaning operation to perform.
-            If 0, demeans phenotype + covariants. Useful for single regressions that will handle all the data complexity
-            for you.
-            If 1, demeans phenotype, assumes that you have already demeaned covariant's
-        :type demean_option: int
+        there are no fixed effects yet demeaning was selected. If we have fixed effects, demean the data
 
         :return: Demeaned DataFrame, rank of degrees of freedom
-        :rtype: (pd.DataFrame, int)
+        :rtype: pd.DataFrame
         """
         # Add a constant if the model lacks any covariants / fe or lacks both covariants and fe but not clusters
         if len(self.covariants) == 0 or len(self.fixed_effects) == 0 or \
@@ -107,29 +72,12 @@ class HDFE:
             demeaned = self.df.copy()
             demeaned["Const"] = [1.0 for _ in range(len(demeaned))]
             self.covariants = self.covariants + ["Const"]
-            return demeaned, 0
+            return demeaned
 
         else:
-            if demean_option == 0:
-                # Demean the whole dataframe and calculate the degrees of freedom after demeaning
-                # todo also here
-                return self.demean(self.phenotype + self.covariants), cal_df(self.df, self.fixed_effects)
-
-            elif demean_option == 1:
-                # Demean the phenotype
-                phenotype = self.demean(self.phenotype)
-                demeaned = self.df.copy()
-                demeaned[self.phenotype] = phenotype[self.phenotype]
-
-                # Return this after calculating degrees of freedom
-                # todo: Cal_df should always be the same though right? Why are we doing this per run when it can be
-                #  per model?
-                # todo: Have a -recalculate_df- property or something to update the df if the formula is changed.
-                return demeaned, cal_df(self.df, self.fixed_effects)
-
-            else:
-                raise IndexError(f"Demean_option takes the value of 0 for demeaning all variables in formula or 1 for"
-                                 f"demeaning phenotype")
+            # Demean the whole dataframe
+            return demean(self.phenotype + self.covariants, self.df, self.fixed_effects, self.obs,
+                          self.epsilon, self.max_iter, self.mean_squared_error)
 
     def _reg_std(self, result, rank, demeaned_df):
         """
