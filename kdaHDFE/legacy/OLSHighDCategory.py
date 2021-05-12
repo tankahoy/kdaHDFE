@@ -143,5 +143,6 @@ def ols_high_d_category(data_df, formula=None, robust=False, c_method='cgm', psd
         f_result.Covariance_Type = 'clustered'
 
     end = time.time()
-    print(f"Total {end - total_start}")
+    if debug:
+        print(f"Total {end - total_start}")
     return f_result  # , demeaned_df
