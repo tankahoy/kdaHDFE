@@ -13,31 +13,20 @@ pip install git+https://github.com/sbaker-dev/FixedEffectModel
 
 # Example
 
-Unlike the original FixedEffectModel you **must** to use a formula
+Unlike the original FixedEffectModel you **must** to use a formula  akin to 
+'dependent variable ~ continuous variable|fixed_effect|clusters
 
 ```python
-from kdaHDFE import ols_high_d_category, getfe, alpha_std
+from kdaHDFE import HDFE
 import pandas as pd
 
 df = pd.read_csv('yourdata.csv')
 
 #define model
-#you can define the model through defining formula like 'dependent variable ~ continuous variable|fixed_effect|clusters|(endogenous variables ~ instrument variables)'
 formula_without_iv = 'y~x+x2|id+firm|id+firm'
 formula_without_cluster = 'y~x+x2|id+firm|0|(Q|W~x3+x4+x5)'
 formula = 'y~x+x2|id+firm|id+firm|(Q|W~x3+x4+x5)'
-result1 = ols_high_d_category(df, formula = formula,robust=False,c_method = 'cgm',epsilon = 1e-8,psdef= True,max_iter = 1e6)
-
-#show result
-result1.summary()
-
-#get fixed effects
-getfe(result1 , epsilon=1e-8)
-
-#define the expression of standard error of difference between two fixed effect estimations you want to know
-expression = 'id_1-id_2'
-#get standard error
-alpha_std(result1, formula = expression , sample_num=100)
+result1 = HDFE(df, formula = formula, robust=False, epsilon = 1e-8, ps_def= True,max_iter = 1e6)
 
 ```
 
