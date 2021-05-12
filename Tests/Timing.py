@@ -1,7 +1,6 @@
 from kdaHDFE.legacy import ols_high_d_category
-from kdaHDFE import HDFE
+from kdaHDFE import HDFE, cal_df, formula_transform
 
-from miscSupports import flatten, flip_list
 from csvObject import write_csv
 from pathlib import Path
 import pandas as pd
@@ -32,11 +31,14 @@ if __name__ == '__main__':
             time_old.append(time.time() - start)
         print(np.average(time_old))
 
+        phenotype, covariant, fixed_effects, clusters = formula_transform(formula)
+        rank = cal_df(df, fixed_effects)
+
         print("NEW")
         time_new = []
         for i in range(runs):
             start = time.time()
-            HDFE(df, formula).reg_hdfe()
+            HDFE(df, formula).reg_hdfe(rank)
             time_new.append(time.time() - start)
 
         run_rows.append([name, np.average(time_old), np.average(time_new)])
