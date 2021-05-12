@@ -1,5 +1,8 @@
-from kdaHDFE import formula_transform
+from kdaHDFE import formula_transform, HDFE, cal_df
 
+from pathlib import Path
+import pandas as pd
+import numpy as np
 import unittest
 
 
@@ -23,9 +26,6 @@ class UnitTestingHDFE(unittest.TestCase):
         bmi~Cov|DFE+DFE2|DFE: phenotype ~ Covariant | Fixed effect | Cluster
         bmi~Cov||DFE+DFE2: phenotype ~ Covariant | | Cluster
         bmi~|DFE|DFE: phenotype ~ | Fixed effect | Cluster
-
-        :return: None
-        :rtype: None
         """
 
         # Failed formula's to test that AssertionError can catch them
@@ -40,6 +40,36 @@ class UnitTestingHDFE(unittest.TestCase):
         for formula, validate in zip(formula_list, expected_lengths):
             with self.subTest():
                 self.assertEqual([len(sub_list) for sub_list in formula_transform(formula)], validate)
+
+    @staticmethod
+    def _example_data():
+        """Load the example data"""
+        return pd.read_csv(Path(Path(__file__).parent.parent, "Data", "ExampleData.csv"))
+
+    def test_nan(self):
+        """
+        Data may be missing, we need to make sure we are handling it
+        """
+
+        # Load the example database, then change all 0 to NaN
+        df = self._example_data()
+        df = df.replace(0, np.NaN)
+
+        # Test the regression still runs
+        formula = "BMI~Gender+Smoke+Alcohol"
+        r = HDFE(df, formula).reg_hdfe(cal_df(df, formula_transform(formula)[2]))
+        self.assertEqual(int(r.params["Gender"]), 9)
+
+    def test_invalid_names(self):
+        """
+        Individuals may place a variable that does not exist in the DataFrame, we need to catch this.
+        """
+
+        df = self._example_data()
+
+        formula = "bmi~Geder"
+        rank = cal_df(df, formula_transform(formula)[2])
+        self.assertRaises(AssertionError, lambda: HDFE(df, formula).reg_hdfe(rank)[:1])
 
 
 if __name__ == '__main__':
