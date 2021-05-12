@@ -25,7 +25,7 @@ class HDFE:
         self.cm = cm
         self.ps_def = ps_def
 
-    def demean_data_frame(self):
+    def demean(self, variables):
         """
         Using large numbers of fixed effects can slow programs down. This uses demeaning of groupby to reduce the
         complexity of the operation
@@ -34,13 +34,13 @@ class HDFE:
         :rtype: pd.DataFrame
         """
         demean_return = self.df.copy()
-
-        for covariant in self.covariants + self.phenotype:
+        for covariant in variables:
             demeaned = self.df.copy()
             mse = self.mean_squared_error
 
             iter_count = 0
             demeans_cache = np.zeros(self.obs, np.float64)
+
             while mse > self.epsilon:
                 for fe in self.fixed_effects:
                     demeaned[covariant] = demeaned[covariant] - demeaned.groupby(fe)[covariant].transform('mean')
@@ -48,11 +48,12 @@ class HDFE:
                 iter_count += 1
                 mse = np.linalg.norm(demeaned[covariant].values - demeans_cache)
                 demeans_cache = demeaned[covariant].copy().values
+
                 if iter_count > self.max_iter:
                     raise RuntimeWarning(f'MSE fails to converge to epsilon within {self.max_iter} iterations')
 
             demean_return[[covariant]] = demeaned[[covariant]]
-        return demean_return
+        return demean_return[variables + self.fixed_effects]
 
     def reg_hdfe(self):
         """
